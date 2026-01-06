@@ -13,6 +13,7 @@ const Index = () => {
     extras,
     barbers,
     allBarbers,
+    discounts,
     addService,
     updateService,
     deleteService,
@@ -22,6 +23,9 @@ const Index = () => {
     addBarber,
     updateBarber,
     deleteBarber,
+    addDiscount,
+    updateDiscount,
+    deleteDiscount,
     addTransaction,
     getDailySummary,
   } = useBarbershopStore();
@@ -41,6 +45,7 @@ const Index = () => {
               services={services}
               extras={extras}
               barbers={barbers}
+              discounts={discounts}
               onSubmit={addTransaction}
             />
           )}
@@ -54,6 +59,7 @@ const Index = () => {
               services={services}
               extras={extras}
               barbers={allBarbers}
+              discounts={discounts}
               onAddService={addService}
               onUpdateService={updateService}
               onDeleteService={deleteService}
@@ -63,6 +69,9 @@ const Index = () => {
               onAddBarber={addBarber}
               onUpdateBarber={updateBarber}
               onDeleteBarber={deleteBarber}
+              onAddDiscount={addDiscount}
+              onUpdateDiscount={updateDiscount}
+              onDeleteDiscount={deleteDiscount}
             />
           )}
         </div>
