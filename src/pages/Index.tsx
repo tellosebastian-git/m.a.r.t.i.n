@@ -51,7 +51,7 @@ const Index = () => {
           )}
 
           {activeTab === 'resumen' && (
-            <DailySummary summary={summary} />
+            <DailySummary summary={summary} barbers={barbers} />
           )}
 
           {activeTab === 'config' && (
