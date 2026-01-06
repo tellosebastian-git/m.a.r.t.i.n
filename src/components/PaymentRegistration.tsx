@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Scissors, CreditCard, Banknote, Check, Percent, DollarSign, ArrowLeft, ArrowRight, User, Sparkles, Wallet } from 'lucide-react';
+import { Scissors, CreditCard, Banknote, Check, Percent, ArrowLeft, ArrowRight, User, Sparkles, Wallet, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Service, Extra, Barber, PaymentMethod, DiscountType } from '@/types/barbershop';
 
@@ -25,13 +24,23 @@ interface PaymentRegistrationProps {
   }) => void;
 }
 
-type Step = 'barber' | 'service' | 'extras' | 'payment';
+type Step = 'barber' | 'service' | 'extras' | 'discount' | 'payment';
 
-const STEPS: Step[] = ['barber', 'service', 'extras', 'payment'];
+const STEPS: Step[] = ['barber', 'service', 'extras', 'discount', 'payment'];
+
+const DISCOUNT_OPTIONS = [
+  { id: 'none', label: 'Sin descuento', value: 0 },
+  { id: '10', label: '10%', value: 10 },
+  { id: '20', label: '20%', value: 20 },
+  { id: '30', label: '30%', value: 30 },
+  { id: '50', label: '50%', value: 50 },
+];
+
 const STEP_INFO = {
   barber: { title: 'Barbero', subtitle: 'Selecciona quién atendió', icon: User },
   service: { title: 'Servicio', subtitle: 'Selecciona el servicio principal', icon: Scissors },
   extras: { title: 'Extras', subtitle: 'Agrega extras opcionales (Enter para continuar)', icon: Sparkles },
+  discount: { title: 'Descuento', subtitle: 'Aplica un descuento si corresponde', icon: Tag },
   payment: { title: 'Método de Pago', subtitle: 'Selecciona cómo paga el cliente', icon: Wallet },
 };
 
@@ -41,8 +50,7 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
   const [selectedBarber, setSelectedBarber] = useState('');
   const [selectedService, setSelectedService] = useState('');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
-  const [discount, setDiscount] = useState('');
-  const [discountType, setDiscountType] = useState<DiscountType>('fixed');
+  const [selectedDiscount, setSelectedDiscount] = useState('none');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
 
   const currentStepIndex = STEPS.indexOf(currentStep);
@@ -59,13 +67,14 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
     return servicePrice + extrasTotal;
   }, [service, selectedExtrasData]);
 
+  const discountPercentage = useMemo(() => {
+    const option = DISCOUNT_OPTIONS.find(d => d.id === selectedDiscount);
+    return option?.value || 0;
+  }, [selectedDiscount]);
+
   const discountAmount = useMemo(() => {
-    const discountValue = parseFloat(discount) || 0;
-    if (discountType === 'percentage') {
-      return Math.round(subtotal * (discountValue / 100));
-    }
-    return discountValue;
-  }, [discount, discountType, subtotal]);
+    return Math.round(subtotal * (discountPercentage / 100));
+  }, [subtotal, discountPercentage]);
 
   const total = useMemo(() => Math.max(0, subtotal - discountAmount), [subtotal, discountAmount]);
 
@@ -101,6 +110,11 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
     );
   }, []);
 
+  const handleSelectDiscount = useCallback((discountId: string) => {
+    setSelectedDiscount(discountId);
+    setTimeout(() => goToNextStep(), 150);
+  }, [goToNextStep]);
+
   const handleSelectPayment = useCallback((method: PaymentMethod) => {
     setPaymentMethod(method);
   }, []);
@@ -109,8 +123,7 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
     setSelectedBarber('');
     setSelectedService('');
     setSelectedExtras([]);
-    setDiscount('');
-    setDiscountType('fixed');
+    setSelectedDiscount('none');
     setPaymentMethod('');
     setCurrentStep('barber');
   }, []);
@@ -132,8 +145,8 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
       serviceName: service!.name,
       servicePrice: service!.price,
       extras: selectedExtrasData,
-      discount: parseFloat(discount) || 0,
-      discountType,
+      discount: discountPercentage,
+      discountType: 'percentage',
       paymentMethod,
       subtotal,
       total,
@@ -145,7 +158,7 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
     });
 
     resetForm();
-  }, [selectedBarber, selectedService, paymentMethod, barber, service, selectedExtrasData, discount, discountType, subtotal, total, onSubmit, toast, resetForm]);
+  }, [selectedBarber, selectedService, paymentMethod, barber, service, selectedExtrasData, discountPercentage, subtotal, total, onSubmit, toast, resetForm]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -161,6 +174,8 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
           handleSelectService(services[index].id);
         } else if (currentStep === 'extras' && extras[index]) {
           handleToggleExtra(extras[index].id);
+        } else if (currentStep === 'discount' && DISCOUNT_OPTIONS[index]) {
+          handleSelectDiscount(DISCOUNT_OPTIONS[index].id);
         } else if (currentStep === 'payment') {
           if (index === 0) handleSelectPayment('efectivo');
           if (index === 1) handleSelectPayment('mercado_pago');
@@ -198,7 +213,7 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, barbers, services, extras, paymentMethod, selectedBarber, selectedService, handleSelectBarber, handleSelectService, handleToggleExtra, handleSelectPayment, goToNextStep, goToPrevStep, handleSubmit]);
+  }, [currentStep, barbers, services, extras, paymentMethod, selectedBarber, selectedService, handleSelectBarber, handleSelectService, handleToggleExtra, handleSelectDiscount, handleSelectPayment, goToNextStep, goToPrevStep, handleSubmit]);
 
   const StepIcon = STEP_INFO[currentStep].icon;
 
@@ -339,52 +354,45 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
                 </button>
               ))}
             </div>
-            
-            {/* Discount Section */}
-            <Card className="border-dashed">
-              <CardContent className="p-4">
-                <p className="text-sm font-medium text-muted-foreground mb-3">Descuento (opcional)</p>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={discount}
-                      onChange={(e) => setDiscount(e.target.value)}
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  <div className="flex rounded-lg border overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setDiscountType('fixed')}
-                      className={`px-4 flex items-center gap-1 transition-colors ${
-                        discountType === 'fixed' 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted hover:bg-muted/80'
-                      }`}
-                    >
-                      <DollarSign className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDiscountType('percentage')}
-                      className={`px-4 flex items-center gap-1 transition-colors ${
-                        discountType === 'percentage' 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted hover:bg-muted/80'
-                      }`}
-                    >
-                      <Percent className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             <Button onClick={goToNextStep} className="w-full h-12" variant="secondary">
               Continuar <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+          </div>
+        )}
+
+        {/* Discount Step */}
+        {currentStep === 'discount' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {DISCOUNT_OPTIONS.map((option, index) => (
+              <button
+                key={option.id}
+                onClick={() => handleSelectDiscount(option.id)}
+                className={`relative p-6 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                  selectedDiscount === option.id
+                    ? 'border-secondary bg-secondary/10 shadow-lg'
+                    : 'border-border hover:border-secondary/50 bg-card'
+                }`}
+              >
+                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                  {index + 1}
+                </div>
+                <div className="w-12 h-12 rounded-full bg-primary/10 mx-auto mb-3 flex items-center justify-center">
+                  {option.value === 0 ? (
+                    <Check className="h-6 w-6 text-primary" />
+                  ) : (
+                    <Percent className="h-6 w-6 text-secondary" />
+                  )}
+                </div>
+                <p className="font-semibold text-center text-foreground text-lg">{option.label}</p>
+                {option.value > 0 && subtotal > 0 && (
+                  <p className="text-sm text-center text-muted-foreground mt-1">
+                    -${Math.round(subtotal * (option.value / 100)).toLocaleString()}
+                  </p>
+                )}
+                <p className="text-xs text-center text-muted-foreground mt-2">Ctrl+{index + 1}</p>
+              </button>
+            ))}
           </div>
         )}
 
