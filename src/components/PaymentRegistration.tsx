@@ -1,11 +1,8 @@
-import { useState, useMemo } from 'react';
-import { Scissors, CreditCard, Banknote, Check, Percent, DollarSign } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Scissors, CreditCard, Banknote, Check, Percent, DollarSign, ArrowLeft, ArrowRight, User, Sparkles, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Service, Extra, Barber, PaymentMethod, DiscountType } from '@/types/barbershop';
 
@@ -28,8 +25,19 @@ interface PaymentRegistrationProps {
   }) => void;
 }
 
+type Step = 'barber' | 'service' | 'extras' | 'payment';
+
+const STEPS: Step[] = ['barber', 'service', 'extras', 'payment'];
+const STEP_INFO = {
+  barber: { title: 'Barbero', subtitle: 'Selecciona quién atendió', icon: User },
+  service: { title: 'Servicio', subtitle: 'Selecciona el servicio principal', icon: Scissors },
+  extras: { title: 'Extras', subtitle: 'Agrega extras opcionales (Enter para continuar)', icon: Sparkles },
+  payment: { title: 'Método de Pago', subtitle: 'Selecciona cómo paga el cliente', icon: Wallet },
+};
+
 export function PaymentRegistration({ services, extras, barbers, onSubmit }: PaymentRegistrationProps) {
   const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState<Step>('barber');
   const [selectedBarber, setSelectedBarber] = useState('');
   const [selectedService, setSelectedService] = useState('');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
@@ -37,6 +45,7 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
   const [discountType, setDiscountType] = useState<DiscountType>('fixed');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
 
+  const currentStepIndex = STEPS.indexOf(currentStep);
   const service = useMemo(() => services.find(s => s.id === selectedService), [services, selectedService]);
   const barber = useMemo(() => barbers.find(b => b.id === selectedBarber), [barbers, selectedBarber]);
   const selectedExtrasData = useMemo(() => 
@@ -60,28 +69,57 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
 
   const total = useMemo(() => Math.max(0, subtotal - discountAmount), [subtotal, discountAmount]);
 
-  const handleExtraToggle = (extraId: string) => {
+  const goToNextStep = useCallback(() => {
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < STEPS.length) {
+      setCurrentStep(STEPS[nextIndex]);
+    }
+  }, [currentStepIndex]);
+
+  const goToPrevStep = useCallback(() => {
+    const prevIndex = currentStepIndex - 1;
+    if (prevIndex >= 0) {
+      setCurrentStep(STEPS[prevIndex]);
+    }
+  }, [currentStepIndex]);
+
+  const handleSelectBarber = useCallback((barberId: string) => {
+    setSelectedBarber(barberId);
+    setTimeout(() => goToNextStep(), 150);
+  }, [goToNextStep]);
+
+  const handleSelectService = useCallback((serviceId: string) => {
+    setSelectedService(serviceId);
+    setTimeout(() => goToNextStep(), 150);
+  }, [goToNextStep]);
+
+  const handleToggleExtra = useCallback((extraId: string) => {
     setSelectedExtras(prev => 
       prev.includes(extraId) 
         ? prev.filter(id => id !== extraId)
         : [...prev, extraId]
     );
-  };
+  }, []);
 
-  const resetForm = () => {
+  const handleSelectPayment = useCallback((method: PaymentMethod) => {
+    setPaymentMethod(method);
+  }, []);
+
+  const resetForm = useCallback(() => {
     setSelectedBarber('');
     setSelectedService('');
     setSelectedExtras([]);
     setDiscount('');
     setDiscountType('fixed');
     setPaymentMethod('');
-  };
+    setCurrentStep('barber');
+  }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!selectedBarber || !selectedService || !paymentMethod) {
       toast({
         title: "Campos requeridos",
-        description: "Por favor completa barbero, servicio y método de pago.",
+        description: "Por favor completa todos los pasos.",
         variant: "destructive",
       });
       return;
@@ -107,203 +145,340 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
     });
 
     resetForm();
-  };
+  }, [selectedBarber, selectedService, paymentMethod, barber, service, selectedExtrasData, discount, discountType, subtotal, total, onSubmit, toast, resetForm]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle Ctrl+Number shortcuts
+      if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
+        e.preventDefault();
+        const index = parseInt(e.key) - 1;
+        
+        if (currentStep === 'barber' && barbers[index]) {
+          handleSelectBarber(barbers[index].id);
+        } else if (currentStep === 'service' && services[index]) {
+          handleSelectService(services[index].id);
+        } else if (currentStep === 'extras' && extras[index]) {
+          handleToggleExtra(extras[index].id);
+        } else if (currentStep === 'payment') {
+          if (index === 0) handleSelectPayment('efectivo');
+          if (index === 1) handleSelectPayment('mercado_pago');
+        }
+      }
+
+      // Enter to continue (especially useful for extras step or to submit on payment)
+      if (e.key === 'Enter' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        if (currentStep === 'extras') {
+          e.preventDefault();
+          goToNextStep();
+        } else if (currentStep === 'payment' && paymentMethod) {
+          e.preventDefault();
+          handleSubmit();
+        }
+      }
+
+      // Arrow navigation
+      if (e.key === 'ArrowLeft' && e.altKey) {
+        e.preventDefault();
+        goToPrevStep();
+      }
+      if (e.key === 'ArrowRight' && e.altKey) {
+        e.preventDefault();
+        if (currentStep === 'barber' && selectedBarber) goToNextStep();
+        if (currentStep === 'service' && selectedService) goToNextStep();
+        if (currentStep === 'extras') goToNextStep();
+      }
+
+      // Escape to go back
+      if (e.key === 'Escape') {
+        goToPrevStep();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentStep, barbers, services, extras, paymentMethod, selectedBarber, selectedService, handleSelectBarber, handleSelectService, handleToggleExtra, handleSelectPayment, goToNextStep, goToPrevStep, handleSubmit]);
+
+  const StepIcon = STEP_INFO[currentStep].icon;
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-gradient-gold">
           <Scissors className="h-5 w-5 text-primary" />
         </div>
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground">Nuevo Cobro</h2>
-          <p className="text-muted-foreground text-sm">Registra un servicio completado</p>
+          <p className="text-muted-foreground text-sm">Usa Ctrl+1-9 para selección rápida</p>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Barber Selection */}
-        <Card className="shadow-card border-0">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Barbero</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedBarber} onValueChange={setSelectedBarber}>
-              <SelectTrigger className="h-12 text-base">
-                <SelectValue placeholder="Seleccionar barbero" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                {barbers.map(barber => (
-                  <SelectItem key={barber.id} value={barber.id}>
-                    {barber.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-
-        {/* Service Selection */}
-        <Card className="shadow-card border-0">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Servicio Principal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedService} onValueChange={setSelectedService}>
-              <SelectTrigger className="h-12 text-base">
-                <SelectValue placeholder="Seleccionar servicio" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                {services.map(service => (
-                  <SelectItem key={service.id} value={service.id}>
-                    <span className="flex items-center justify-between w-full gap-4">
-                      {service.name}
-                      <span className="text-muted-foreground">${service.price.toLocaleString()}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+      {/* Progress Steps */}
+      <div className="flex items-center gap-2">
+        {STEPS.map((step, index) => (
+          <div key={step} className="flex items-center flex-1">
+            <button
+              onClick={() => {
+                // Only allow going back or to current step
+                if (index <= currentStepIndex) {
+                  setCurrentStep(step);
+                }
+              }}
+              className={`flex-1 h-2 rounded-full transition-all ${
+                index < currentStepIndex
+                  ? 'bg-secondary cursor-pointer'
+                  : index === currentStepIndex
+                  ? 'bg-primary'
+                  : 'bg-muted'
+              }`}
+            />
+            {index < STEPS.length - 1 && <div className="w-2" />}
+          </div>
+        ))}
       </div>
 
-      {/* Extras */}
-      <Card className="shadow-card border-0">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Extras (Opcional)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {extras.map(extra => (
-              <label
-                key={extra.id}
-                className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                  selectedExtras.includes(extra.id)
-                    ? 'border-secondary bg-secondary/10'
-                    : 'border-border hover:border-muted-foreground/30'
+      {/* Step Header */}
+      <div className="flex items-center gap-3 pb-2 border-b border-border">
+        <div className="p-2 rounded-lg bg-primary/10">
+          <StepIcon className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-foreground">{STEP_INFO[currentStep].title}</h3>
+          <p className="text-sm text-muted-foreground">{STEP_INFO[currentStep].subtitle}</p>
+        </div>
+        <div className="text-sm text-muted-foreground font-medium">
+          Paso {currentStepIndex + 1} de {STEPS.length}
+        </div>
+      </div>
+
+      {/* Step Content */}
+      <div className="min-h-[300px]">
+        {/* Barber Step */}
+        {currentStep === 'barber' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {barbers.map((barber, index) => (
+              <button
+                key={barber.id}
+                onClick={() => handleSelectBarber(barber.id)}
+                className={`relative p-6 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                  selectedBarber === barber.id
+                    ? 'border-secondary bg-secondary/10 shadow-lg'
+                    : 'border-border hover:border-secondary/50 bg-card'
                 }`}
               >
-                <Checkbox
-                  checked={selectedExtras.includes(extra.id)}
-                  onCheckedChange={() => handleExtraToggle(extra.id)}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{extra.name}</p>
-                  <p className="text-xs text-muted-foreground">${extra.price.toLocaleString()}</p>
+                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                  {index + 1}
                 </div>
-              </label>
+                <div className="w-14 h-14 rounded-full bg-gradient-gold mx-auto mb-3 flex items-center justify-center">
+                  <User className="h-7 w-7 text-primary" />
+                </div>
+                <p className="font-semibold text-center text-foreground">{barber.name}</p>
+                <p className="text-xs text-center text-muted-foreground mt-1">Ctrl+{index + 1}</p>
+              </button>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Discount */}
-      <Card className="shadow-card border-0">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Descuento (Opcional)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <Input
-                type="number"
-                placeholder="0"
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                className="h-12 text-base"
-              />
-            </div>
-            <div className="flex rounded-lg border overflow-hidden">
+        {/* Service Step */}
+        {currentStep === 'service' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {services.map((service, index) => (
               <button
-                type="button"
-                onClick={() => setDiscountType('fixed')}
-                className={`px-4 flex items-center gap-1 transition-colors ${
-                  discountType === 'fixed' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted hover:bg-muted/80'
+                key={service.id}
+                onClick={() => handleSelectService(service.id)}
+                className={`relative p-5 rounded-xl border-2 transition-all hover:scale-[1.02] text-left ${
+                  selectedService === service.id
+                    ? 'border-secondary bg-secondary/10 shadow-lg'
+                    : 'border-border hover:border-secondary/50 bg-card'
                 }`}
               >
-                <DollarSign className="h-4 w-4" />
+                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                  {index + 1}
+                </div>
+                <div className="flex justify-between items-center pl-6">
+                  <div>
+                    <p className="font-semibold text-foreground">{service.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Ctrl+{index + 1}</p>
+                  </div>
+                  <div className="text-xl font-bold text-secondary">${service.price.toLocaleString()}</div>
+                </div>
               </button>
+            ))}
+          </div>
+        )}
+
+        {/* Extras Step */}
+        {currentStep === 'extras' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {extras.map((extra, index) => (
+                <button
+                  key={extra.id}
+                  onClick={() => handleToggleExtra(extra.id)}
+                  className={`relative p-4 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                    selectedExtras.includes(extra.id)
+                      ? 'border-secondary bg-secondary/10 shadow-lg'
+                      : 'border-border hover:border-secondary/50 bg-card'
+                  }`}
+                >
+                  <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                    {index + 1}
+                  </div>
+                  {selectedExtras.includes(extra.id) && (
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
+                      <Check className="h-4 w-4" />
+                    </div>
+                  )}
+                  <div className="pt-4">
+                    <p className="font-semibold text-foreground text-center">{extra.name}</p>
+                    <p className="text-lg font-bold text-secondary text-center mt-1">+${extra.price.toLocaleString()}</p>
+                    <p className="text-xs text-center text-muted-foreground mt-1">Ctrl+{index + 1}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            {/* Discount Section */}
+            <Card className="border-dashed">
+              <CardContent className="p-4">
+                <p className="text-sm font-medium text-muted-foreground mb-3">Descuento (opcional)</p>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={discount}
+                      onChange={(e) => setDiscount(e.target.value)}
+                      className="h-12 text-base"
+                    />
+                  </div>
+                  <div className="flex rounded-lg border overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setDiscountType('fixed')}
+                      className={`px-4 flex items-center gap-1 transition-colors ${
+                        discountType === 'fixed' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted hover:bg-muted/80'
+                      }`}
+                    >
+                      <DollarSign className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDiscountType('percentage')}
+                      className={`px-4 flex items-center gap-1 transition-colors ${
+                        discountType === 'percentage' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted hover:bg-muted/80'
+                      }`}
+                    >
+                      <Percent className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button onClick={goToNextStep} className="w-full h-12" variant="secondary">
+              Continuar <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Payment Step */}
+        {currentStep === 'payment' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
               <button
-                type="button"
-                onClick={() => setDiscountType('percentage')}
-                className={`px-4 flex items-center gap-1 transition-colors ${
-                  discountType === 'percentage' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted hover:bg-muted/80'
+                onClick={() => handleSelectPayment('efectivo')}
+                className={`relative p-8 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                  paymentMethod === 'efectivo'
+                    ? 'border-success bg-success/10 shadow-lg'
+                    : 'border-border hover:border-success/50 bg-card'
                 }`}
               >
-                <Percent className="h-4 w-4" />
+                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                  1
+                </div>
+                <Banknote className={`h-12 w-12 mx-auto mb-3 ${paymentMethod === 'efectivo' ? 'text-success' : 'text-muted-foreground'}`} />
+                <p className="font-semibold text-center text-foreground">Efectivo</p>
+                <p className="text-xs text-center text-muted-foreground mt-1">Ctrl+1</p>
+              </button>
+              <button
+                onClick={() => handleSelectPayment('mercado_pago')}
+                className={`relative p-8 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                  paymentMethod === 'mercado_pago'
+                    ? 'border-secondary bg-secondary/10 shadow-lg'
+                    : 'border-border hover:border-secondary/50 bg-card'
+                }`}
+              >
+                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                  2
+                </div>
+                <CreditCard className={`h-12 w-12 mx-auto mb-3 ${paymentMethod === 'mercado_pago' ? 'text-secondary' : 'text-muted-foreground'}`} />
+                <p className="font-semibold text-center text-foreground">Mercado Pago</p>
+                <p className="text-xs text-center text-muted-foreground mt-1">Ctrl+2</p>
               </button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Payment Method */}
-      <Card className="shadow-card border-0">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Método de Pago</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('efectivo')}
-              className={`flex items-center justify-center gap-3 p-4 rounded-lg border-2 transition-all ${
-                paymentMethod === 'efectivo'
-                  ? 'border-success bg-success/10'
-                  : 'border-border hover:border-muted-foreground/30'
-              }`}
-            >
-              <Banknote className={`h-6 w-6 ${paymentMethod === 'efectivo' ? 'text-success' : 'text-muted-foreground'}`} />
-              <span className="font-medium">Efectivo</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('mercado_pago')}
-              className={`flex items-center justify-center gap-3 p-4 rounded-lg border-2 transition-all ${
-                paymentMethod === 'mercado_pago'
-                  ? 'border-secondary bg-secondary/10'
-                  : 'border-border hover:border-muted-foreground/30'
-              }`}
-            >
-              <CreditCard className={`h-6 w-6 ${paymentMethod === 'mercado_pago' ? 'text-secondary' : 'text-muted-foreground'}`} />
-              <span className="font-medium">Mercado Pago</span>
-            </button>
+            {/* Summary */}
+            <Card className="bg-gradient-hero text-primary-foreground border-0">
+              <CardContent className="p-6">
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-primary-foreground/70">Barbero</span>
+                    <span className="font-medium">{barber?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-primary-foreground/70">Servicio</span>
+                    <span className="font-medium">{service?.name} - ${service?.price.toLocaleString()}</span>
+                  </div>
+                  {selectedExtrasData.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-primary-foreground/70">Extras</span>
+                      <span className="font-medium">{selectedExtrasData.map(e => e.name).join(', ')}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t border-primary-foreground/20 pt-3">
+                    <span className="text-primary-foreground/70">Subtotal</span>
+                    <span className="font-medium">${subtotal.toLocaleString()}</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-primary-foreground/70">Descuento</span>
+                      <span className="font-medium">-${discountAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between pt-4 mt-4 border-t border-primary-foreground/20">
+                  <span className="text-lg font-semibold">Total</span>
+                  <span className="text-3xl font-display font-bold">${total.toLocaleString()}</span>
+                </div>
+                <Button
+                  onClick={handleSubmit}
+                  className="w-full mt-6 h-14 text-lg font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                  disabled={!paymentMethod}
+                >
+                  <Check className="h-5 w-5 mr-2" />
+                  Registrar Cobro (Enter)
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      {/* Summary & Submit */}
-      <Card className="shadow-elevated border-0 bg-gradient-hero text-primary-foreground">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-primary-foreground/70">Subtotal</span>
-            <span className="font-medium">${subtotal.toLocaleString()}</span>
-          </div>
-          {discountAmount > 0 && (
-            <div className="flex items-center justify-between mb-4 text-destructive-foreground">
-              <span className="text-primary-foreground/70">Descuento</span>
-              <span className="font-medium">-${discountAmount.toLocaleString()}</span>
-            </div>
-          )}
-          <div className="flex items-center justify-between pt-4 border-t border-primary-foreground/20">
-            <span className="text-lg font-semibold">Total</span>
-            <span className="text-3xl font-display font-bold">${total.toLocaleString()}</span>
-          </div>
-          <Button
-            onClick={handleSubmit}
-            className="w-full mt-6 h-14 text-lg font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/90"
-            disabled={!selectedBarber || !selectedService || !paymentMethod}
-          >
-            <Check className="h-5 w-5 mr-2" />
-            Registrar Cobro
+      {/* Navigation */}
+      {currentStepIndex > 0 && (
+        <div className="flex justify-start pt-4 border-t border-border">
+          <Button variant="ghost" onClick={goToPrevStep} className="gap-2">
+            <ArrowLeft className="h-4 w-4" /> Volver (Esc)
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 }
