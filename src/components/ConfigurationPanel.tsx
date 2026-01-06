@@ -37,30 +37,25 @@ export function ConfigurationPanel({
   onDeleteBarber,
 }: ConfigurationPanelProps) {
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-gradient-gold">
-          <Scissors className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-display font-bold text-foreground">Configuración</h2>
-          <p className="text-muted-foreground text-sm">Administra servicios, extras y staff</p>
-        </div>
+    <div className="space-y-8 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">Configuración</h1>
+        <p className="text-muted-foreground text-sm mt-1">Administra servicios, extras y staff</p>
       </div>
 
       <Tabs defaultValue="services" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-12 bg-muted p-1">
-          <TabsTrigger value="services" className="flex items-center gap-2 data-[state=active]:bg-card">
+        <TabsList className="w-full h-11 bg-muted p-1 rounded-lg">
+          <TabsTrigger value="services" className="flex-1 flex items-center justify-center gap-2 data-[state=active]:bg-card rounded-md">
             <Scissors className="h-4 w-4" />
-            <span className="hidden sm:inline">Servicios</span>
+            <span>Servicios</span>
           </TabsTrigger>
-          <TabsTrigger value="extras" className="flex items-center gap-2 data-[state=active]:bg-card">
+          <TabsTrigger value="extras" className="flex-1 flex items-center justify-center gap-2 data-[state=active]:bg-card rounded-md">
             <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">Extras</span>
+            <span>Extras</span>
           </TabsTrigger>
-          <TabsTrigger value="staff" className="flex items-center gap-2 data-[state=active]:bg-card">
+          <TabsTrigger value="staff" className="flex-1 flex items-center justify-center gap-2 data-[state=active]:bg-card rounded-md">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Staff</span>
+            <span>Staff</span>
           </TabsTrigger>
         </TabsList>
 
@@ -95,7 +90,6 @@ export function ConfigurationPanel({
   );
 }
 
-// Services List Component
 function ServicesList({
   services,
   onAdd,
@@ -137,9 +131,9 @@ function ServicesList({
   };
 
   return (
-    <Card className="shadow-card border-0">
+    <Card className="border border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Servicios</CardTitle>
+        <CardTitle className="text-base font-medium">Servicios</CardTitle>
         {!isAdding && (
           <Button variant="outline" size="sm" onClick={() => setIsAdding(true)}>
             <Plus className="h-4 w-4 mr-1" />
@@ -147,11 +141,11 @@ function ServicesList({
           </Button>
         )}
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2">
         {isAdding && (
           <div className="flex gap-2 p-3 bg-muted rounded-lg animate-scale-in">
             <Input
-              placeholder="Nombre del servicio"
+              placeholder="Nombre"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="flex-1"
@@ -175,7 +169,7 @@ function ServicesList({
         {services.map((service) => (
           <div
             key={service.id}
-            className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group hover:bg-muted transition-colors"
+            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 group hover:bg-muted transition-colors"
           >
             {editingId === service.id ? (
               <>
@@ -199,13 +193,13 @@ function ServicesList({
               </>
             ) : (
               <>
-                <span className="flex-1 font-medium">{service.name}</span>
-                <span className="text-muted-foreground font-medium">${service.price.toLocaleString()}</span>
+                <span className="flex-1 font-medium text-foreground">{service.name}</span>
+                <span className="text-muted-foreground">${service.price.toLocaleString()}</span>
                 <Button
                   size="icon"
                   variant="ghost"
                   onClick={() => startEdit(service)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
@@ -213,7 +207,7 @@ function ServicesList({
                   size="icon"
                   variant="ghost"
                   onClick={() => onDelete(service.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive h-8 w-8"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -226,7 +220,6 @@ function ServicesList({
   );
 }
 
-// Extras List Component
 function ExtrasList({
   extras,
   onAdd,
@@ -268,9 +261,9 @@ function ExtrasList({
   };
 
   return (
-    <Card className="shadow-card border-0">
+    <Card className="border border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Extras</CardTitle>
+        <CardTitle className="text-base font-medium">Extras</CardTitle>
         {!isAdding && (
           <Button variant="outline" size="sm" onClick={() => setIsAdding(true)}>
             <Plus className="h-4 w-4 mr-1" />
@@ -278,11 +271,11 @@ function ExtrasList({
           </Button>
         )}
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2">
         {isAdding && (
           <div className="flex gap-2 p-3 bg-muted rounded-lg animate-scale-in">
             <Input
-              placeholder="Nombre del extra"
+              placeholder="Nombre"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="flex-1"
@@ -306,7 +299,7 @@ function ExtrasList({
         {extras.map((extra) => (
           <div
             key={extra.id}
-            className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group hover:bg-muted transition-colors"
+            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 group hover:bg-muted transition-colors"
           >
             {editingId === extra.id ? (
               <>
@@ -330,13 +323,13 @@ function ExtrasList({
               </>
             ) : (
               <>
-                <span className="flex-1 font-medium">{extra.name}</span>
-                <span className="text-muted-foreground font-medium">${extra.price.toLocaleString()}</span>
+                <span className="flex-1 font-medium text-foreground">{extra.name}</span>
+                <span className="text-muted-foreground">${extra.price.toLocaleString()}</span>
                 <Button
                   size="icon"
                   variant="ghost"
                   onClick={() => startEdit(extra)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
@@ -344,7 +337,7 @@ function ExtrasList({
                   size="icon"
                   variant="ghost"
                   onClick={() => onDelete(extra.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive h-8 w-8"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -357,7 +350,6 @@ function ExtrasList({
   );
 }
 
-// Staff List Component
 function StaffList({
   barbers,
   onAdd,
@@ -395,9 +387,9 @@ function StaffList({
   };
 
   return (
-    <Card className="shadow-card border-0">
+    <Card className="border border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Staff</CardTitle>
+        <CardTitle className="text-base font-medium">Staff</CardTitle>
         {!isAdding && (
           <Button variant="outline" size="sm" onClick={() => setIsAdding(true)}>
             <Plus className="h-4 w-4 mr-1" />
@@ -405,11 +397,11 @@ function StaffList({
           </Button>
         )}
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2">
         {isAdding && (
           <div className="flex gap-2 p-3 bg-muted rounded-lg animate-scale-in">
             <Input
-              placeholder="Nombre del barbero"
+              placeholder="Nombre"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="flex-1"
@@ -426,7 +418,7 @@ function StaffList({
         {barbers.map((barber) => (
           <div
             key={barber.id}
-            className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group hover:bg-muted transition-colors"
+            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 group hover:bg-muted transition-colors"
           >
             {editingId === barber.id ? (
               <>
@@ -444,9 +436,9 @@ function StaffList({
               </>
             ) : (
               <>
-                <span className="flex-1 font-medium">{barber.name}</span>
+                <span className="flex-1 font-medium text-foreground">{barber.name}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {barber.active ? 'Activo' : 'Inactivo'}
                   </span>
                   <Switch
@@ -458,7 +450,7 @@ function StaffList({
                   size="icon"
                   variant="ghost"
                   onClick={() => startEdit(barber)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
@@ -466,7 +458,7 @@ function StaffList({
                   size="icon"
                   variant="ghost"
                   onClick={() => onDelete(barber.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive h-8 w-8"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

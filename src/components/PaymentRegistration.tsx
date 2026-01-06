@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Scissors, CreditCard, Banknote, Check, Percent, ArrowLeft, ArrowRight, User, Sparkles, Wallet, Tag } from 'lucide-react';
+import { CreditCard, Banknote, Check, Percent, ArrowLeft, ArrowRight, User, Sparkles, Wallet, Tag, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Service, Extra, Barber, PaymentMethod, DiscountType } from '@/types/barbershop';
 
@@ -39,7 +38,7 @@ const DISCOUNT_OPTIONS = [
 const STEP_INFO = {
   barber: { title: 'Barbero', subtitle: 'Selecciona quién atendió', icon: User },
   service: { title: 'Servicio', subtitle: 'Selecciona el servicio principal', icon: Scissors },
-  extras: { title: 'Extras', subtitle: 'Agrega extras opcionales (Enter para continuar)', icon: Sparkles },
+  extras: { title: 'Extras', subtitle: 'Agrega extras opcionales', icon: Sparkles },
   discount: { title: 'Descuento', subtitle: 'Aplica un descuento si corresponde', icon: Tag },
   payment: { title: 'Método de Pago', subtitle: 'Selecciona cómo paga el cliente', icon: Wallet },
 };
@@ -94,12 +93,12 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
 
   const handleSelectBarber = useCallback((barberId: string) => {
     setSelectedBarber(barberId);
-    setTimeout(() => goToNextStep(), 150);
+    setTimeout(() => goToNextStep(), 100);
   }, [goToNextStep]);
 
   const handleSelectService = useCallback((serviceId: string) => {
     setSelectedService(serviceId);
-    setTimeout(() => goToNextStep(), 150);
+    setTimeout(() => goToNextStep(), 100);
   }, [goToNextStep]);
 
   const handleToggleExtra = useCallback((extraId: string) => {
@@ -112,7 +111,7 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
 
   const handleSelectDiscount = useCallback((discountId: string) => {
     setSelectedDiscount(discountId);
-    setTimeout(() => goToNextStep(), 150);
+    setTimeout(() => goToNextStep(), 100);
   }, [goToNextStep]);
 
   const handleSelectPayment = useCallback((method: PaymentMethod) => {
@@ -153,8 +152,8 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
     });
 
     toast({
-      title: "¡Cobro registrado!",
-      description: `$${total.toLocaleString()} - ${service!.name} por ${barber!.name}`,
+      title: "Cobro registrado",
+      description: `$${total.toLocaleString()} - ${service!.name}`,
     });
 
     resetForm();
@@ -163,7 +162,6 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Handle Ctrl+Number shortcuts
       if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
         e.preventDefault();
         const index = parseInt(e.key) - 1;
@@ -182,7 +180,6 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
         }
       }
 
-      // Enter to continue (especially useful for extras step or to submit on payment)
       if (e.key === 'Enter' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
         if (currentStep === 'extras') {
           e.preventDefault();
@@ -193,7 +190,6 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
         }
       }
 
-      // Arrow navigation
       if (e.key === 'ArrowLeft' && e.altKey) {
         e.preventDefault();
         goToPrevStep();
@@ -205,7 +201,6 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
         if (currentStep === 'extras') goToNextStep();
       }
 
-      // Escape to go back
       if (e.key === 'Escape') {
         goToPrevStep();
       }
@@ -218,79 +213,72 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
   const StepIcon = STEP_INFO[currentStep].icon;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-gradient-gold">
-          <Scissors className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-display font-bold text-foreground">Nuevo Cobro</h2>
-          <p className="text-muted-foreground text-sm">Usa Ctrl+1-9 para selección rápida</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">Nuevo Cobro</h1>
+        <p className="text-muted-foreground text-sm mt-1">Ctrl+1-9 para selección rápida</p>
       </div>
 
       {/* Progress Steps */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         {STEPS.map((step, index) => (
           <div key={step} className="flex items-center flex-1">
             <button
               onClick={() => {
-                // Only allow going back or to current step
                 if (index <= currentStepIndex) {
                   setCurrentStep(step);
                 }
               }}
-              className={`flex-1 h-2 rounded-full transition-all ${
+              className={`flex-1 h-1.5 rounded-full transition-all ${
                 index < currentStepIndex
                   ? 'bg-secondary cursor-pointer'
                   : index === currentStepIndex
-                  ? 'bg-primary'
-                  : 'bg-muted'
+                  ? 'bg-foreground'
+                  : 'bg-border'
               }`}
             />
-            {index < STEPS.length - 1 && <div className="w-2" />}
+            {index < STEPS.length - 1 && <div className="w-1" />}
           </div>
         ))}
       </div>
 
       {/* Step Header */}
-      <div className="flex items-center gap-3 pb-2 border-b border-border">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <StepIcon className="h-5 w-5 text-primary" />
+      <div className="flex items-center gap-4 pb-4 border-b border-border">
+        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+          <StepIcon className="h-5 w-5 text-foreground" />
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-foreground">{STEP_INFO[currentStep].title}</h3>
+          <h2 className="text-lg font-medium text-foreground">{STEP_INFO[currentStep].title}</h2>
           <p className="text-sm text-muted-foreground">{STEP_INFO[currentStep].subtitle}</p>
         </div>
-        <div className="text-sm text-muted-foreground font-medium">
-          Paso {currentStepIndex + 1} de {STEPS.length}
+        <div className="text-sm text-muted-foreground">
+          {currentStepIndex + 1}/{STEPS.length}
         </div>
       </div>
 
       {/* Step Content */}
-      <div className="min-h-[300px]">
+      <div className="min-h-[320px]">
         {/* Barber Step */}
         {currentStep === 'barber' && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {barbers.map((barber, index) => (
               <button
                 key={barber.id}
                 onClick={() => handleSelectBarber(barber.id)}
-                className={`relative p-6 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                className={`relative p-6 rounded-lg border transition-all hover:border-secondary ${
                   selectedBarber === barber.id
-                    ? 'border-secondary bg-secondary/10 shadow-lg'
-                    : 'border-border hover:border-secondary/50 bg-card'
+                    ? 'border-secondary bg-secondary/5'
+                    : 'border-border bg-card hover:bg-muted/50'
                 }`}
               >
-                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                <span className="absolute top-3 left-3 text-xs font-medium text-muted-foreground">
                   {index + 1}
+                </span>
+                <div className="w-12 h-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
+                  <User className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <div className="w-14 h-14 rounded-full bg-gradient-gold mx-auto mb-3 flex items-center justify-center">
-                  <User className="h-7 w-7 text-primary" />
-                </div>
-                <p className="font-semibold text-center text-foreground">{barber.name}</p>
-                <p className="text-xs text-center text-muted-foreground mt-1">Ctrl+{index + 1}</p>
+                <p className="font-medium text-center text-foreground">{barber.name}</p>
               </button>
             ))}
           </div>
@@ -298,26 +286,23 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
 
         {/* Service Step */}
         {currentStep === 'service' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {services.map((service, index) => (
               <button
                 key={service.id}
                 onClick={() => handleSelectService(service.id)}
-                className={`relative p-5 rounded-xl border-2 transition-all hover:scale-[1.02] text-left ${
+                className={`relative p-5 rounded-lg border transition-all text-left hover:border-secondary ${
                   selectedService === service.id
-                    ? 'border-secondary bg-secondary/10 shadow-lg'
-                    : 'border-border hover:border-secondary/50 bg-card'
+                    ? 'border-secondary bg-secondary/5'
+                    : 'border-border bg-card hover:bg-muted/50'
                 }`}
               >
-                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                <span className="absolute top-3 left-3 text-xs font-medium text-muted-foreground">
                   {index + 1}
-                </div>
+                </span>
                 <div className="flex justify-between items-center pl-6">
-                  <div>
-                    <p className="font-semibold text-foreground">{service.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Ctrl+{index + 1}</p>
-                  </div>
-                  <div className="text-xl font-bold text-secondary">${service.price.toLocaleString()}</div>
+                  <span className="font-medium text-foreground">{service.name}</span>
+                  <span className="text-lg font-semibold text-foreground">${service.price.toLocaleString()}</span>
                 </div>
               </button>
             ))}
@@ -327,35 +312,34 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
         {/* Extras Step */}
         {currentStep === 'extras' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {extras.map((extra, index) => (
                 <button
                   key={extra.id}
                   onClick={() => handleToggleExtra(extra.id)}
-                  className={`relative p-4 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                  className={`relative p-4 rounded-lg border transition-all hover:border-secondary ${
                     selectedExtras.includes(extra.id)
-                      ? 'border-secondary bg-secondary/10 shadow-lg'
-                      : 'border-border hover:border-secondary/50 bg-card'
+                      ? 'border-secondary bg-secondary/5'
+                      : 'border-border bg-card hover:bg-muted/50'
                   }`}
                 >
-                  <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                  <span className="absolute top-2 left-2 text-xs font-medium text-muted-foreground">
                     {index + 1}
-                  </div>
+                  </span>
                   {selectedExtras.includes(extra.id) && (
-                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
-                      <Check className="h-4 w-4" />
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
+                      <Check className="h-3 w-3" />
                     </div>
                   )}
-                  <div className="pt-4">
-                    <p className="font-semibold text-foreground text-center">{extra.name}</p>
-                    <p className="text-lg font-bold text-secondary text-center mt-1">+${extra.price.toLocaleString()}</p>
-                    <p className="text-xs text-center text-muted-foreground mt-1">Ctrl+{index + 1}</p>
+                  <div className="pt-3">
+                    <p className="font-medium text-foreground text-center">{extra.name}</p>
+                    <p className="text-sm font-semibold text-muted-foreground text-center mt-1">+${extra.price.toLocaleString()}</p>
                   </div>
                 </button>
               ))}
             </div>
 
-            <Button onClick={goToNextStep} className="w-full h-12" variant="secondary">
+            <Button onClick={goToNextStep} className="w-full h-12 bg-foreground hover:bg-foreground/90">
               Continuar <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -363,34 +347,33 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
 
         {/* Discount Step */}
         {currentStep === 'discount' && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {DISCOUNT_OPTIONS.map((option, index) => (
               <button
                 key={option.id}
                 onClick={() => handleSelectDiscount(option.id)}
-                className={`relative p-6 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                className={`relative p-6 rounded-lg border transition-all hover:border-secondary ${
                   selectedDiscount === option.id
-                    ? 'border-secondary bg-secondary/10 shadow-lg'
-                    : 'border-border hover:border-secondary/50 bg-card'
+                    ? 'border-secondary bg-secondary/5'
+                    : 'border-border bg-card hover:bg-muted/50'
                 }`}
               >
-                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                <span className="absolute top-3 left-3 text-xs font-medium text-muted-foreground">
                   {index + 1}
-                </div>
-                <div className="w-12 h-12 rounded-full bg-primary/10 mx-auto mb-3 flex items-center justify-center">
+                </span>
+                <div className="w-10 h-10 rounded-lg bg-muted mx-auto mb-3 flex items-center justify-center">
                   {option.value === 0 ? (
-                    <Check className="h-6 w-6 text-primary" />
+                    <Check className="h-5 w-5 text-muted-foreground" />
                   ) : (
-                    <Percent className="h-6 w-6 text-secondary" />
+                    <Percent className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
-                <p className="font-semibold text-center text-foreground text-lg">{option.label}</p>
+                <p className="font-medium text-center text-foreground">{option.label}</p>
                 {option.value > 0 && subtotal > 0 && (
-                  <p className="text-sm text-center text-muted-foreground mt-1">
+                  <p className="text-xs text-center text-muted-foreground mt-1">
                     -${Math.round(subtotal * (option.value / 100)).toLocaleString()}
                   </p>
                 )}
-                <p className="text-xs text-center text-muted-foreground mt-2">Ctrl+{index + 1}</p>
               </button>
             ))}
           </div>
@@ -402,79 +385,73 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => handleSelectPayment('efectivo')}
-                className={`relative p-8 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                className={`relative p-8 rounded-lg border transition-all hover:border-success ${
                   paymentMethod === 'efectivo'
-                    ? 'border-success bg-success/10 shadow-lg'
-                    : 'border-border hover:border-success/50 bg-card'
+                    ? 'border-success bg-success/5'
+                    : 'border-border bg-card hover:bg-muted/50'
                 }`}
               >
-                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
-                  1
-                </div>
-                <Banknote className={`h-12 w-12 mx-auto mb-3 ${paymentMethod === 'efectivo' ? 'text-success' : 'text-muted-foreground'}`} />
-                <p className="font-semibold text-center text-foreground">Efectivo</p>
-                <p className="text-xs text-center text-muted-foreground mt-1">Ctrl+1</p>
+                <span className="absolute top-3 left-3 text-xs font-medium text-muted-foreground">1</span>
+                <Banknote className={`h-10 w-10 mx-auto mb-3 ${paymentMethod === 'efectivo' ? 'text-success' : 'text-muted-foreground'}`} />
+                <p className="font-medium text-center text-foreground">Efectivo</p>
               </button>
               <button
                 onClick={() => handleSelectPayment('mercado_pago')}
-                className={`relative p-8 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                className={`relative p-8 rounded-lg border transition-all hover:border-secondary ${
                   paymentMethod === 'mercado_pago'
-                    ? 'border-secondary bg-secondary/10 shadow-lg'
-                    : 'border-border hover:border-secondary/50 bg-card'
+                    ? 'border-secondary bg-secondary/5'
+                    : 'border-border bg-card hover:bg-muted/50'
                 }`}
               >
-                <div className="absolute top-2 left-2 w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
-                  2
-                </div>
-                <CreditCard className={`h-12 w-12 mx-auto mb-3 ${paymentMethod === 'mercado_pago' ? 'text-secondary' : 'text-muted-foreground'}`} />
-                <p className="font-semibold text-center text-foreground">Mercado Pago</p>
-                <p className="text-xs text-center text-muted-foreground mt-1">Ctrl+2</p>
+                <span className="absolute top-3 left-3 text-xs font-medium text-muted-foreground">2</span>
+                <CreditCard className={`h-10 w-10 mx-auto mb-3 ${paymentMethod === 'mercado_pago' ? 'text-secondary' : 'text-muted-foreground'}`} />
+                <p className="font-medium text-center text-foreground">Mercado Pago</p>
               </button>
             </div>
 
             {/* Summary */}
-            <Card className="bg-gradient-hero text-primary-foreground border-0">
-              <CardContent className="p-6">
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-primary-foreground/70">Barbero</span>
-                    <span className="font-medium">{barber?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-primary-foreground/70">Servicio</span>
-                    <span className="font-medium">{service?.name} - ${service?.price.toLocaleString()}</span>
-                  </div>
-                  {selectedExtrasData.length > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-primary-foreground/70">Extras</span>
-                      <span className="font-medium">{selectedExtrasData.map(e => e.name).join(', ')}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t border-primary-foreground/20 pt-3">
-                    <span className="text-primary-foreground/70">Subtotal</span>
-                    <span className="font-medium">${subtotal.toLocaleString()}</span>
-                  </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-primary-foreground/70">Descuento</span>
-                      <span className="font-medium">-${discountAmount.toLocaleString()}</span>
-                    </div>
-                  )}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Barbero</span>
+                  <span className="font-medium">{barber?.name}</span>
                 </div>
-                <div className="flex items-center justify-between pt-4 mt-4 border-t border-primary-foreground/20">
-                  <span className="text-lg font-semibold">Total</span>
-                  <span className="text-3xl font-display font-bold">${total.toLocaleString()}</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Servicio</span>
+                  <span className="font-medium">{service?.name}</span>
                 </div>
-                <Button
-                  onClick={handleSubmit}
-                  className="w-full mt-6 h-14 text-lg font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                  disabled={!paymentMethod}
-                >
-                  <Check className="h-5 w-5 mr-2" />
-                  Registrar Cobro (Enter)
-                </Button>
-              </CardContent>
-            </Card>
+                {selectedExtrasData.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Extras</span>
+                    <span className="font-medium">{selectedExtrasData.map(e => e.name).join(', ')}</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-3 border-t border-border">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium">${subtotal.toLocaleString()}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-success">
+                    <span>Descuento ({discountPercentage}%)</span>
+                    <span className="font-medium">-${discountAmount.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                <span className="text-lg font-medium">Total</span>
+                <span className="text-3xl font-bold text-foreground">${total.toLocaleString()}</span>
+              </div>
+              
+              <Button
+                onClick={handleSubmit}
+                className="w-full mt-6 h-14 text-base font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                disabled={!paymentMethod}
+              >
+                <Check className="h-5 w-5 mr-2" />
+                Registrar Cobro
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -482,8 +459,8 @@ export function PaymentRegistration({ services, extras, barbers, onSubmit }: Pay
       {/* Navigation */}
       {currentStepIndex > 0 && (
         <div className="flex justify-start pt-4 border-t border-border">
-          <Button variant="ghost" onClick={goToPrevStep} className="gap-2">
-            <ArrowLeft className="h-4 w-4" /> Volver (Esc)
+          <Button variant="ghost" onClick={goToPrevStep} className="gap-2 text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Volver
           </Button>
         </div>
       )}
