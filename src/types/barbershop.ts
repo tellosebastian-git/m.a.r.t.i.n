@@ -16,6 +16,12 @@ export interface Barber {
   active: boolean;
 }
 
+export interface Discount {
+  id: string;
+  label: string;
+  value: number;
+}
+
 export interface Transaction {
   id: string;
   barberId: string;

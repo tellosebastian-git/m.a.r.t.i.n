@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Service, Extra, Barber, Transaction } from '@/types/barbershop';
+import { Service, Extra, Barber, Discount, Transaction } from '@/types/barbershop';
 
 // Initial demo data
 const initialServices: Service[] = [
@@ -22,10 +22,19 @@ const initialBarbers: Barber[] = [
   { id: '3', name: 'Andrés', active: true },
 ];
 
+const initialDiscounts: Discount[] = [
+  { id: 'none', label: 'Sin descuento', value: 0 },
+  { id: '10', label: '10%', value: 10 },
+  { id: '20', label: '20%', value: 20 },
+  { id: '30', label: '30%', value: 30 },
+  { id: '50', label: '50%', value: 50 },
+];
+
 export function useBarbershopStore() {
   const [services, setServices] = useState<Service[]>(initialServices);
   const [extras, setExtras] = useState<Extra[]>(initialExtras);
   const [barbers, setBarbers] = useState<Barber[]>(initialBarbers);
+  const [discounts, setDiscounts] = useState<Discount[]>(initialDiscounts);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   // Services CRUD
@@ -73,6 +82,23 @@ export function useBarbershopStore() {
     setBarbers(prev => prev.filter(b => b.id !== id));
   }, []);
 
+  // Discounts CRUD
+  const addDiscount = useCallback((discount: Omit<Discount, 'id'>) => {
+    const newDiscount = { ...discount, id: crypto.randomUUID() };
+    setDiscounts(prev => [...prev, newDiscount]);
+    return newDiscount;
+  }, []);
+
+  const updateDiscount = useCallback((id: string, updates: Partial<Discount>) => {
+    setDiscounts(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+  }, []);
+
+  const deleteDiscount = useCallback((id: string) => {
+    // Don't allow deleting "Sin descuento" option
+    if (id === 'none') return;
+    setDiscounts(prev => prev.filter(d => d.id !== id));
+  }, []);
+
   // Transactions
   const addTransaction = useCallback((transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
     const newTransaction = {
@@ -114,6 +140,7 @@ export function useBarbershopStore() {
     extras,
     barbers: barbers.filter(b => b.active),
     allBarbers: barbers,
+    discounts,
     transactions,
     // Services
     addService,
@@ -127,6 +154,10 @@ export function useBarbershopStore() {
     addBarber,
     updateBarber,
     deleteBarber,
+    // Discounts
+    addDiscount,
+    updateDiscount,
+    deleteDiscount,
     // Transactions
     addTransaction,
     getTodayTransactions,
