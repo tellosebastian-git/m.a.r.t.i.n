@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Service, Extra, Barber, Discount, Transaction } from '@/types/barbershop';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Initial demo data
 const initialServices: Service[] = [
@@ -100,13 +102,42 @@ export function useBarbershopStore() {
   }, []);
 
   // Transactions
-  const addTransaction = useCallback((transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
+  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
     const newTransaction = {
       ...transaction,
       id: crypto.randomUUID(),
       createdAt: new Date(),
     };
+    
+    // Save to local state
     setTransactions(prev => [newTransaction, ...prev]);
+    
+    // Save to Supabase
+    const extrasTotal = transaction.extras.reduce((sum, e) => sum + e.price, 0);
+    const { error } = await supabase.from('transactions').insert({
+      barber_id: transaction.barberId,
+      barber_name: transaction.barberName,
+      service_id: transaction.serviceId,
+      service_name: transaction.serviceName,
+      service_price: transaction.servicePrice,
+      extras: transaction.extras,
+      extras_total: extrasTotal,
+      discount_id: null,
+      discount_name: transaction.discountType === 'percentage' ? `${transaction.discount}%` : null,
+      discount_percentage: transaction.discountType === 'percentage' ? transaction.discount : 0,
+      discount_amount: transaction.subtotal - transaction.total,
+      subtotal: transaction.subtotal,
+      total: transaction.total,
+      payment_method: transaction.paymentMethod,
+    });
+    
+    if (error) {
+      console.error('Error saving transaction:', error);
+      toast.error('Error al guardar en la base de datos');
+    } else {
+      toast.success('Cobro guardado correctamente');
+    }
+    
     return newTransaction;
   }, []);
 
