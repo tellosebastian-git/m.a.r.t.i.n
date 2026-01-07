@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      transactions: {
+        Row: {
+          barber_id: string
+          barber_name: string
+          created_at: string
+          discount_amount: number | null
+          discount_id: string | null
+          discount_name: string | null
+          discount_percentage: number | null
+          extras: Json | null
+          extras_total: number | null
+          id: string
+          payment_method: string
+          service_id: string
+          service_name: string
+          service_price: number
+          subtotal: number
+          total: number
+        }
+        Insert: {
+          barber_id: string
+          barber_name: string
+          created_at?: string
+          discount_amount?: number | null
+          discount_id?: string | null
+          discount_name?: string | null
+          discount_percentage?: number | null
+          extras?: Json | null
+          extras_total?: number | null
+          id?: string
+          payment_method: string
+          service_id: string
+          service_name: string
+          service_price: number
+          subtotal: number
+          total: number
+        }
+        Update: {
+          barber_id?: string
+          barber_name?: string
+          created_at?: string
+          discount_amount?: number | null
+          discount_id?: string | null
+          discount_name?: string | null
+          discount_percentage?: number | null
+          extras?: Json | null
+          extras_total?: number | null
+          id?: string
+          payment_method?: string
+          service_id?: string
+          service_name?: string
+          service_price?: number
+          subtotal?: number
+          total?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
