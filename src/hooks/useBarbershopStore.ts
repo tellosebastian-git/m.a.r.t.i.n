@@ -1,9 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Service, ServiceLine, Extra, Barber, Discount, Transaction } from '@/types/barbershop';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseScissors as supabase } from '@/lib/supabaseScissors';
 import { toast } from 'sonner';
-
-// Barbershop store hook for managing state
 
 const initialExtras: Extra[] = [
   { id: '1', name: 'Lavado', price: 500 },
