@@ -1,22 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Service, ServiceLine, Extra, Barber, Discount, Transaction } from '@/types/barbershop';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-// Initial demo data
-const initialServiceLines: ServiceLine[] = [
-  { id: '1', name: 'Esencial' },
-  { id: '2', name: 'Deluxe' },
-];
-
-const initialServices: Service[] = [
-  { id: '1', name: 'Corte', price: 3500, lineId: '1' },
-  { id: '2', name: 'Corte + Barba', price: 5000, lineId: '1' },
-  { id: '3', name: 'Barba', price: 2000, lineId: '1' },
-  { id: '4', name: 'Corte', price: 5500, lineId: '2' },
-  { id: '5', name: 'Corte + Barba', price: 7500, lineId: '2' },
-  { id: '6', name: 'Barba', price: 3500, lineId: '2' },
-];
 
 const initialExtras: Extra[] = [
   { id: '1', name: 'Lavado', price: 500 },
@@ -40,29 +25,177 @@ const initialDiscounts: Discount[] = [
 ];
 
 export function useBarbershopStore() {
-  const [serviceLines, setServiceLines] = useState<ServiceLine[]>(initialServiceLines);
-  const [services, setServices] = useState<Service[]>(initialServices);
+  const [serviceLines, setServiceLines] = useState<ServiceLine[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [extras, setExtras] = useState<Extra[]>(initialExtras);
   const [barbers, setBarbers] = useState<Barber[]>(initialBarbers);
   const [discounts, setDiscounts] = useState<Discount[]>(initialDiscounts);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data from Supabase on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      
+      // Load service lines
+      const { data: linesData, error: linesError } = await supabase
+        .from('service_lines')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (linesError) {
+        console.error('Error loading service lines:', linesError);
+      } else if (linesData) {
+        setServiceLines(linesData.map(l => ({ id: l.id, name: l.name })));
+      }
+
+      // Load services
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (servicesError) {
+        console.error('Error loading services:', servicesError);
+      } else if (servicesData) {
+        setServices(servicesData.map(s => ({
+          id: s.id,
+          name: s.name,
+          price: Number(s.price),
+          lineId: s.line_id || undefined,
+        })));
+      }
+
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, []);
+
+  // Service Lines CRUD
+  const addServiceLine = useCallback(async (line: Omit<ServiceLine, 'id'>) => {
+    const { data, error } = await supabase
+      .from('service_lines')
+      .insert({ name: line.name })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error adding service line:', error);
+      toast.error('Error al guardar la línea');
+      return null;
+    }
+    
+    const newLine = { id: data.id, name: data.name };
+    setServiceLines(prev => [...prev, newLine]);
+    toast.success('Línea creada');
+    return newLine;
+  }, []);
+
+  const updateServiceLine = useCallback(async (id: string, updates: Partial<ServiceLine>) => {
+    const { error } = await supabase
+      .from('service_lines')
+      .update({ name: updates.name })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error updating service line:', error);
+      toast.error('Error al actualizar la línea');
+      return;
+    }
+    
+    setServiceLines(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  }, []);
+
+  const deleteServiceLine = useCallback(async (id: string) => {
+    // First update services to remove line_id reference
+    await supabase
+      .from('services')
+      .update({ line_id: null })
+      .eq('line_id', id);
+    
+    const { error } = await supabase
+      .from('service_lines')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting service line:', error);
+      toast.error('Error al eliminar la línea');
+      return;
+    }
+    
+    setServices(prev => prev.map(s => s.lineId === id ? { ...s, lineId: undefined } : s));
+    setServiceLines(prev => prev.filter(l => l.id !== id));
+    toast.success('Línea eliminada');
+  }, []);
 
   // Services CRUD
-  const addService = useCallback((service: Omit<Service, 'id'>) => {
-    const newService = { ...service, id: crypto.randomUUID() };
+  const addService = useCallback(async (service: Omit<Service, 'id'>) => {
+    const { data, error } = await supabase
+      .from('services')
+      .insert({
+        name: service.name,
+        price: service.price,
+        line_id: service.lineId || null,
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error adding service:', error);
+      toast.error('Error al guardar el servicio');
+      return null;
+    }
+    
+    const newService = {
+      id: data.id,
+      name: data.name,
+      price: Number(data.price),
+      lineId: data.line_id || undefined,
+    };
     setServices(prev => [...prev, newService]);
+    toast.success('Servicio creado');
     return newService;
   }, []);
 
-  const updateService = useCallback((id: string, updates: Partial<Service>) => {
+  const updateService = useCallback(async (id: string, updates: Partial<Service>) => {
+    const { error } = await supabase
+      .from('services')
+      .update({
+        name: updates.name,
+        price: updates.price,
+        line_id: updates.lineId || null,
+      })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error updating service:', error);
+      toast.error('Error al actualizar el servicio');
+      return;
+    }
+    
     setServices(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   }, []);
 
-  const deleteService = useCallback((id: string) => {
+  const deleteService = useCallback(async (id: string) => {
+    const { error } = await supabase
+      .from('services')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting service:', error);
+      toast.error('Error al eliminar el servicio');
+      return;
+    }
+    
     setServices(prev => prev.filter(s => s.id !== id));
+    toast.success('Servicio eliminado');
   }, []);
 
-  // Extras CRUD
+  // Extras CRUD (local only for now)
   const addExtra = useCallback((extra: Omit<Extra, 'id'>) => {
     const newExtra = { ...extra, id: crypto.randomUUID() };
     setExtras(prev => [...prev, newExtra]);
@@ -77,7 +210,7 @@ export function useBarbershopStore() {
     setExtras(prev => prev.filter(e => e.id !== id));
   }, []);
 
-  // Barbers CRUD
+  // Barbers CRUD (local only for now)
   const addBarber = useCallback((barber: Omit<Barber, 'id'>) => {
     const newBarber = { ...barber, id: crypto.randomUUID() };
     setBarbers(prev => [...prev, newBarber]);
@@ -92,7 +225,7 @@ export function useBarbershopStore() {
     setBarbers(prev => prev.filter(b => b.id !== id));
   }, []);
 
-  // Discounts CRUD
+  // Discounts CRUD (local only for now)
   const addDiscount = useCallback((discount: Omit<Discount, 'id'>) => {
     const newDiscount = { ...discount, id: crypto.randomUUID() };
     setDiscounts(prev => [...prev, newDiscount]);
@@ -104,7 +237,6 @@ export function useBarbershopStore() {
   }, []);
 
   const deleteDiscount = useCallback((id: string) => {
-    // Don't allow deleting "Sin descuento" option
     if (id === 'none') return;
     setDiscounts(prev => prev.filter(d => d.id !== id));
   }, []);
@@ -117,10 +249,8 @@ export function useBarbershopStore() {
       createdAt: new Date(),
     };
     
-    // Save to local state
     setTransactions(prev => [newTransaction, ...prev]);
     
-    // Save to Supabase
     const extrasTotal = transaction.extras.reduce((sum, e) => sum + e.price, 0);
     const { error } = await supabase.from('transactions').insert({
       barber_id: transaction.barberId,
@@ -173,23 +303,6 @@ export function useBarbershopStore() {
     };
   }, [getTodayTransactions]);
 
-  // Service Lines CRUD
-  const addServiceLine = useCallback((line: Omit<ServiceLine, 'id'>) => {
-    const newLine = { ...line, id: crypto.randomUUID() };
-    setServiceLines(prev => [...prev, newLine]);
-    return newLine;
-  }, []);
-
-  const updateServiceLine = useCallback((id: string, updates: Partial<ServiceLine>) => {
-    setServiceLines(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
-  }, []);
-
-  const deleteServiceLine = useCallback((id: string) => {
-    // Also delete all services in this line
-    setServices(prev => prev.filter(s => s.lineId !== id));
-    setServiceLines(prev => prev.filter(l => l.id !== id));
-  }, []);
-
   return {
     // Data
     serviceLines,
@@ -199,6 +312,7 @@ export function useBarbershopStore() {
     allBarbers: barbers,
     discounts,
     transactions,
+    isLoading,
     // Service Lines
     addServiceLine,
     updateServiceLine,

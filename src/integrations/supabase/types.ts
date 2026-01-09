@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      service_lines: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          created_at: string
+          id: string
+          line_id: string | null
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_id?: string | null
+          name: string
+          price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_id?: string | null
+          name?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "service_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           barber_id: string
