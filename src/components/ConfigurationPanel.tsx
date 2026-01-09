@@ -147,9 +147,12 @@ function ServicesWithLinesList({
   const [newLineName, setNewLineName] = useState('');
   
   const [addingToLineId, setAddingToLineId] = useState<string | null>(null);
+  const [isAddingUnassigned, setIsAddingUnassigned] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [newServiceName, setNewServiceName] = useState('');
   const [newServicePrice, setNewServicePrice] = useState('');
+
+  const unassignedServices = services.filter(s => !s.lineId);
 
   const handleAddLine = () => {
     if (newLineName) {
@@ -167,16 +170,17 @@ function ServicesWithLinesList({
     }
   };
 
-  const handleAddService = (lineId: string) => {
+  const handleAddService = (lineId?: string) => {
     if (newServiceName && newServicePrice) {
       onAddService({ name: newServiceName, price: parseFloat(newServicePrice), lineId });
       setNewServiceName('');
       setNewServicePrice('');
       setAddingToLineId(null);
+      setIsAddingUnassigned(false);
     }
   };
 
-  const handleUpdateService = (id: string, lineId: string) => {
+  const handleUpdateService = (id: string, lineId?: string) => {
     if (newServiceName && newServicePrice) {
       onUpdateService(id, { name: newServiceName, price: parseFloat(newServicePrice), lineId });
       setEditingServiceId(null);
@@ -365,7 +369,104 @@ function ServicesWithLinesList({
 
           {serviceLines.length === 0 && !isAddingLine && (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No hay líneas configuradas. Crea una para agregar servicios.
+              No hay líneas configuradas. Crea una o agrega servicios sin línea abajo.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Servicios sin línea */}
+      <Card className="border border-border bg-card">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <Scissors className="h-4 w-4" />
+            Servicios sin Línea
+          </CardTitle>
+          {!isAddingUnassigned && (
+            <Button variant="outline" size="sm" onClick={() => setIsAddingUnassigned(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {isAddingUnassigned && (
+            <div className="flex gap-2 p-3 bg-muted rounded-lg animate-scale-in">
+              <Input
+                placeholder="Nombre"
+                value={newServiceName}
+                onChange={(e) => setNewServiceName(e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                type="number"
+                placeholder="Precio"
+                value={newServicePrice}
+                onChange={(e) => setNewServicePrice(e.target.value)}
+                className="w-28"
+              />
+              <Button size="icon" onClick={() => handleAddService()} className="bg-success hover:bg-success/90">
+                <Save className="h-4 w-4" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={() => setIsAddingUnassigned(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {unassignedServices.map((service) => (
+            <div
+              key={service.id}
+              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 group hover:bg-muted transition-colors"
+            >
+              {editingServiceId === service.id ? (
+                <>
+                  <Input
+                    value={newServiceName}
+                    onChange={(e) => setNewServiceName(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={newServicePrice}
+                    onChange={(e) => setNewServicePrice(e.target.value)}
+                    className="w-28"
+                  />
+                  <Button size="icon" onClick={() => handleUpdateService(service.id)} className="bg-success hover:bg-success/90">
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => setEditingServiceId(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 font-medium text-foreground">{service.name}</span>
+                  <span className="text-muted-foreground">${service.price.toLocaleString()}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => startEditService(service)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onDeleteService(service.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive h-8 w-8"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
+          ))}
+
+          {unassignedServices.length === 0 && !isAddingUnassigned && (
+            <p className="text-sm text-muted-foreground text-center py-2">
+              No hay servicios sin línea
             </p>
           )}
         </CardContent>

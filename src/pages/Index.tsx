@@ -46,6 +46,7 @@ const Index = () => {
         <div className="max-w-4xl mx-auto p-8">
           {activeTab === 'registro' && (
             <PaymentRegistration
+              serviceLines={serviceLines}
               services={services}
               extras={extras}
               barbers={barbers}
