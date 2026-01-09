@@ -1,14 +1,21 @@
 import { useState, useCallback } from 'react';
-import { Service, Extra, Barber, Discount, Transaction } from '@/types/barbershop';
+import { Service, ServiceLine, Extra, Barber, Discount, Transaction } from '@/types/barbershop';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 // Initial demo data
+const initialServiceLines: ServiceLine[] = [
+  { id: '1', name: 'Esencial' },
+  { id: '2', name: 'Deluxe' },
+];
+
 const initialServices: Service[] = [
-  { id: '1', name: 'Corte Clásico', price: 3500 },
-  { id: '2', name: 'Corte + Barba', price: 5000 },
-  { id: '3', name: 'Barba', price: 2000 },
-  { id: '4', name: 'Combo Premium', price: 6500 },
+  { id: '1', name: 'Corte', price: 3500, lineId: '1' },
+  { id: '2', name: 'Corte + Barba', price: 5000, lineId: '1' },
+  { id: '3', name: 'Barba', price: 2000, lineId: '1' },
+  { id: '4', name: 'Corte', price: 5500, lineId: '2' },
+  { id: '5', name: 'Corte + Barba', price: 7500, lineId: '2' },
+  { id: '6', name: 'Barba', price: 3500, lineId: '2' },
 ];
 
 const initialExtras: Extra[] = [
@@ -33,6 +40,7 @@ const initialDiscounts: Discount[] = [
 ];
 
 export function useBarbershopStore() {
+  const [serviceLines, setServiceLines] = useState<ServiceLine[]>(initialServiceLines);
   const [services, setServices] = useState<Service[]>(initialServices);
   const [extras, setExtras] = useState<Extra[]>(initialExtras);
   const [barbers, setBarbers] = useState<Barber[]>(initialBarbers);
@@ -165,14 +173,36 @@ export function useBarbershopStore() {
     };
   }, [getTodayTransactions]);
 
+  // Service Lines CRUD
+  const addServiceLine = useCallback((line: Omit<ServiceLine, 'id'>) => {
+    const newLine = { ...line, id: crypto.randomUUID() };
+    setServiceLines(prev => [...prev, newLine]);
+    return newLine;
+  }, []);
+
+  const updateServiceLine = useCallback((id: string, updates: Partial<ServiceLine>) => {
+    setServiceLines(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  }, []);
+
+  const deleteServiceLine = useCallback((id: string) => {
+    // Also delete all services in this line
+    setServices(prev => prev.filter(s => s.lineId !== id));
+    setServiceLines(prev => prev.filter(l => l.id !== id));
+  }, []);
+
   return {
     // Data
+    serviceLines,
     services,
     extras,
     barbers: barbers.filter(b => b.active),
     allBarbers: barbers,
     discounts,
     transactions,
+    // Service Lines
+    addServiceLine,
+    updateServiceLine,
+    deleteServiceLine,
     // Services
     addService,
     updateService,

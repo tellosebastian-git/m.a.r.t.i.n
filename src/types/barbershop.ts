@@ -1,7 +1,13 @@
+export interface ServiceLine {
+  id: string;
+  name: string;
+}
+
 export interface Service {
   id: string;
   name: string;
   price: number;
+  lineId: string;
 }
 
 export interface Extra {

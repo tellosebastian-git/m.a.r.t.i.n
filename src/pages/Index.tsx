@@ -9,11 +9,15 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('registro');
   
   const {
+    serviceLines,
     services,
     extras,
     barbers,
     allBarbers,
     discounts,
+    addServiceLine,
+    updateServiceLine,
+    deleteServiceLine,
     addService,
     updateService,
     deleteService,
@@ -56,10 +60,14 @@ const Index = () => {
 
           {activeTab === 'config' && (
             <ConfigurationPanel
+              serviceLines={serviceLines}
               services={services}
               extras={extras}
               barbers={allBarbers}
               discounts={discounts}
+              onAddServiceLine={addServiceLine}
+              onUpdateServiceLine={updateServiceLine}
+              onDeleteServiceLine={deleteServiceLine}
               onAddService={addService}
               onUpdateService={updateService}
               onDeleteService={deleteService}
