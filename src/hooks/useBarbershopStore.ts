@@ -3,6 +3,8 @@ import { Service, ServiceLine, Extra, Barber, Discount, Transaction } from '@/ty
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Barbershop store hook for managing state
+
 const initialExtras: Extra[] = [
   { id: '1', name: 'Lavado', price: 500 },
   { id: '2', name: 'Cejas', price: 300 },
