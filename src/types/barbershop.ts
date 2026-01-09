@@ -7,7 +7,7 @@ export interface Service {
   id: string;
   name: string;
   price: number;
-  lineId: string;
+  lineId?: string;
 }
 
 export interface Extra {

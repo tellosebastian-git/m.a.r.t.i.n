@@ -2,9 +2,10 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { CreditCard, Banknote, Check, Percent, ArrowLeft, ArrowRight, User, Sparkles, Wallet, Tag, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Service, Extra, Barber, Discount, PaymentMethod, DiscountType } from '@/types/barbershop';
+import { Service, ServiceLine, Extra, Barber, Discount, PaymentMethod, DiscountType } from '@/types/barbershop';
 
 interface PaymentRegistrationProps {
+  serviceLines: ServiceLine[];
   services: Service[];
   extras: Extra[];
   barbers: Barber[];
@@ -36,7 +37,7 @@ const STEP_INFO = {
   payment: { title: 'Método de Pago', subtitle: 'Selecciona cómo paga el cliente', icon: Wallet },
 };
 
-export function PaymentRegistration({ services, extras, barbers, discounts, onSubmit }: PaymentRegistrationProps) {
+export function PaymentRegistration({ serviceLines, services, extras, barbers, discounts, onSubmit }: PaymentRegistrationProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<Step>('barber');
   const [selectedBarber, setSelectedBarber] = useState('');
@@ -280,25 +281,35 @@ export function PaymentRegistration({ services, extras, barbers, discounts, onSu
         {/* Service Step */}
         {currentStep === 'service' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {services.map((service, index) => (
-              <button
-                key={service.id}
-                onClick={() => handleSelectService(service.id)}
-                className={`relative p-5 rounded-lg border transition-all text-left hover:border-secondary ${
-                  selectedService === service.id
-                    ? 'border-secondary bg-secondary/5'
-                    : 'border-border bg-card hover:bg-muted/50'
-                }`}
-              >
-                <span className="absolute top-3 left-3 text-xs font-medium text-muted-foreground">
-                  {index + 1}
-                </span>
-                <div className="flex justify-between items-center pl-6">
-                  <span className="font-medium text-foreground">{service.name}</span>
-                  <span className="text-lg font-semibold text-foreground">${service.price.toLocaleString()}</span>
-                </div>
-              </button>
-            ))}
+            {services.map((service, index) => {
+              const line = serviceLines.find(l => l.id === service.lineId);
+              return (
+                <button
+                  key={service.id}
+                  onClick={() => handleSelectService(service.id)}
+                  className={`relative p-5 rounded-lg border transition-all text-left hover:border-secondary ${
+                    selectedService === service.id
+                      ? 'border-secondary bg-secondary/5'
+                      : 'border-border bg-card hover:bg-muted/50'
+                  }`}
+                >
+                  <span className="absolute top-3 left-3 text-xs font-medium text-muted-foreground">
+                    {index + 1}
+                  </span>
+                  <div className="flex justify-between items-center pl-6">
+                    <div>
+                      <span className="font-medium text-foreground">{service.name}</span>
+                      {line && (
+                        <span className="ml-2 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                          {line.name}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-lg font-semibold text-foreground">${service.price.toLocaleString()}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 
